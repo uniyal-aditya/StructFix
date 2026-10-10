@@ -88,7 +88,7 @@ def test_cli_tier2_mocked(fixtures_dir, schema_path, capsys):
         "active": True,
     })
 
-    with patch("structfix.repair.client.requests.post") as mock_post:
+    with patch("structfix.models.client.requests.post") as mock_post:
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"response": mock_response}
         mock_resp.raise_for_status = MagicMock()

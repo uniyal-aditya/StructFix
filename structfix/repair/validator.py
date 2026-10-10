@@ -24,6 +24,20 @@ def format_json_path(path_deque: list[Any]) -> str:
     return path_str
 
 
+def validate_schema(schema: Any) -> tuple[bool, str | None]:
+    """Validate that the schema itself is a valid JSON Schema."""
+    if not isinstance(schema, dict):
+        return False, "Schema must be a JSON object"
+    try:
+        validator_cls = validator_for(schema)
+        validator_cls.check_schema(schema)
+        return True, None
+    except jsonschema.exceptions.SchemaError as e:
+        return False, str(e.message)
+    except Exception as e:
+        return False, str(e)
+
+
 def validate(data: Any, schema: dict[str, Any] | None) -> tuple[bool, list[str]]:
     """Validate data against a JSON schema.
 
@@ -32,6 +46,11 @@ def validate(data: Any, schema: dict[str, Any] | None) -> tuple[bool, list[str]]
     """
     if schema is None:
         return True, []
+
+    # Verify schema itself first
+    schema_ok, schema_err = validate_schema(schema)
+    if not schema_ok:
+        return False, [f"Invalid JSON Schema: {schema_err}"]
 
     validator_cls = validator_for(schema)
     try:

@@ -47,7 +47,7 @@ def repair(
         if ok:
             unrec = find_missing_required_fields(pristine_data, schema)
             latency = (time.perf_counter() - start_time) * 1000
-            status = "unrecoverable" if unrec else "success"
+            status = "unrecoverable" if unrec else "valid"
             logger.debug("Input is already valid JSON meeting schema.")
             return RepairResult(
                 status=status,
@@ -84,7 +84,7 @@ def repair(
             tier1_success = True
             unrec = find_missing_required_fields(tier1_parsed_data, schema)
             latency = (time.perf_counter() - start_time) * 1000
-            status = "unrecoverable" if unrec else "success"
+            status = "unrecoverable" if unrec else "valid"
             logger.info("Tier 1 deterministic repair succeeded.")
             return RepairResult(
                 status=status,
@@ -134,7 +134,7 @@ def repair(
     latency = (time.perf_counter() - start_time) * 1000
 
     if ai_valid:
-        status = "unrecoverable" if unrec else "success"
+        status = "unrecoverable" if unrec else "valid"
         logger.info(f"Tier 2 AI repair succeeded after {ai_calls} call(s).")
         return RepairResult(
             status=status,

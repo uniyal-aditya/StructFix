@@ -35,6 +35,7 @@ def run_benchmarks(
     models: list[str],
     fixtures_dir: Path,
     schema_file: Path,
+    tier1_only: bool = False,
     verbose: bool = False,
 ) -> dict[str, list[dict]]:
     """Run benchmark matrix across all fixtures and models."""
@@ -48,8 +49,10 @@ def run_benchmarks(
         [f for f in fixtures_dir.glob("*.json") if f.name != "schema.json"]
     )
 
-    ollama_online = check_ollama_available()
-    if not ollama_online:
+    ollama_online = False if tier1_only else check_ollama_available()
+    if tier1_only:
+        sys.stderr.write("[BENCHMARK] Running in Deterministic Tier 1-Only mode (--tier1-only).\n\n")
+    elif not ollama_online:
         sys.stderr.write(
             "[BENCHMARK] Note: Ollama server not detected at localhost:11434. "
             "Tier 2 AI repairs will be tested with fallback/offline behavior.\n\n"
@@ -57,7 +60,9 @@ def run_benchmarks(
 
     results_by_model: dict[str, list[dict]] = {}
 
-    for model in models:
+    target_models = ["Deterministic Tier 1"] if tier1_only else models
+
+    for model in target_models:
         model_results = []
         for fixture_path in fixture_files:
             content = fixture_path.read_text(encoding="utf-8")
@@ -65,8 +70,8 @@ def run_benchmarks(
             result = repair(
                 raw_input=content,
                 schema=schema,
-                model=model,
-                enable_tier2=ollama_online,
+                model=model if not tier1_only else "qwen3:1.7b",
+                enable_tier2=ollama_online and not tier1_only,
             )
             elapsed_ms = (time.perf_counter() - start) * 1000
 
@@ -92,7 +97,7 @@ def print_report(results_by_model: dict[str, list[dict]]) -> None:
     print("=" * 88)
 
     for model, runs in results_by_model.items():
-        print(f"\nTarget Model: {model}")
+        print(f"\nTarget Evaluation: {model}")
         print("-" * 88)
         header = f"{'Fixture':<22} | {'Status':<13} | {'Tier':<5} | {'AI Calls':<8} | {'Latency (ms)':<12} | {'Strategies'}"
         print(header)
@@ -101,8 +106,8 @@ def print_report(results_by_model: dict[str, list[dict]]) -> None:
         total_runs = len(runs)
         passed_runs = sum(1 for r in runs if r["is_valid"])
         total_latency = sum(r["latency_ms"] for r in runs)
-        tier1_count = sum(1 for r in runs if r["tier_used"] in (0, 1))
-        tier2_count = sum(1 for r in runs if r["tier_used"] == 2)
+        tier1_count = sum(1 for r in runs if r["tier_used"] in (0, 1) and r["is_valid"])
+        tier2_count = sum(1 for r in runs if r["tier_used"] == 2 and r["is_valid"])
 
         for r in runs:
             status_display = r["status"].upper()
@@ -120,10 +125,10 @@ def print_report(results_by_model: dict[str, list[dict]]) -> None:
         pass_rate = (passed_runs / total_runs) * 100 if total_runs > 0 else 0
         avg_lat = total_latency / total_runs if total_runs > 0 else 0
         print(f"Summary for {model}:")
-        print(f"  - Pass Rate: {passed_runs}/{total_runs} ({pass_rate:.1f}%)")
+        print(f"  - Valid / Conforming: {passed_runs}/{total_runs} ({pass_rate:.1f}%)")
         print(f"  - Average Latency: {avg_lat:.2f} ms")
-        print(f"  - Tier 0/1 Deterministic Solves: {tier1_count}")
-        print(f"  - Tier 2 AI Solves: {tier2_count}")
+        print(f"  - Deterministic Solves (Tier 0/1): {tier1_count}")
+        print(f"  - AI Solves (Tier 2): {tier2_count}")
         print("=" * 88)
 
 
@@ -134,6 +139,12 @@ def main() -> None:
         nargs="+",
         default=["qwen3:1.7b", "llama3.2"],
         help="Models to benchmark against",
+    )
+    parser.add_argument(
+        "--tier1-only",
+        "--deterministic-only",
+        action="store_true",
+        help="Run benchmarks in Tier 1 deterministic-only mode (no LLM required).",
     )
     parser.add_argument(
         "--fixtures",
@@ -159,6 +170,7 @@ def main() -> None:
         models=args.models,
         fixtures_dir=args.fixtures,
         schema_file=args.schema,
+        tier1_only=args.tier1_only,
         verbose=args.verbose,
     )
     print_report(results)

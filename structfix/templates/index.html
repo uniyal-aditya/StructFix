@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StructFix — Local-First LLM JSON Repair</title>
+  <meta name="description" content="Repair malformed LLM JSON output using instant deterministic fixes and bounded local AI model fallback.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Top Header Navigation -->
+  <header class="header">
+    <div class="header-left">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+            <path d="M12 2v4"></path>
+            <path d="M12 18v4"></path>
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">StructFix</span>
+          <span class="tagline">Generate. Validate. Repair. Trust.</span>
+        </div>
+      </div>
+      <div class="sub-header-text">Local-first JSON repair for LLM applications.</div>
+    </div>
+
+    <div class="header-right">
+      <div class="badge badge-privacy" title="No network calls outside your machine. All computation is 100% local.">
+        <span class="dot dot-privacy"></span> 100% Local • Zero Data Persistence
+      </div>
+      <div class="badge badge-ollama" id="ollama-status-badge">
+        <span class="dot dot-checking" id="ollama-dot"></span>
+        <span id="ollama-status-text">Checking Ollama...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="main-container">
+    <!-- Preset Gallery Bar -->
+    <section class="gallery-bar" aria-label="Example Preset Selector">
+      <div class="gallery-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        Load Test Fixtures:
+      </div>
+      <div class="presets-scroll" id="presets-container">
+        <!-- Loaded via JavaScript -->
+        <span class="preset-loading">Loading fixtures...</span>
+      </div>
+    </section>
+
+    <!-- Controls Bar -->
+    <section class="controls-panel">
+      <div class="controls-group">
+        <div class="control-item">
+          <label class="toggle-label" for="enable-ai-toggle">
+            <input type="checkbox" id="enable-ai-toggle" checked>
+            <span class="toggle-switch"></span>
+            <span class="control-title">Tier 2 AI Repair</span>
+          </label>
+        </div>
+
+        <div class="control-item" id="model-select-group">
+          <label for="model-select">Model:</label>
+          <select id="model-select" class="form-select">
+            <option value="qwen3:1.7b" selected>Qwen3 1.7B (Default)</option>
+            <option value="llama3.2">Llama 3.2 3B</option>
+          </select>
+        </div>
+
+        <div class="control-item" id="retries-select-group">
+          <label for="retries-select">Max AI Retries:</label>
+          <select id="retries-select" class="form-select">
+            <option value="1">1 Attempt</option>
+            <option value="2">2 Attempts</option>
+            <option value="3" selected>3 Attempts (Max)</option>
+            <option value="0">0 (Deterministic Only)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="controls-info">
+        <span class="info-pill">Tier 1 deterministic repair is instant and requires no LLM.</span>
+      </div>
+    </section>
+
+    <!-- Grid Workspace: Left (Input & Schema) | Right (Output & Diagnostics) -->
+    <div class="workspace-grid">
+      <!-- Left Panel: Input & Schema -->
+      <div class="panel panel-input">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="step-num">1</span>
+            <span>Malformed LLM Output</span>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-ghost" id="clear-input-btn" title="Clear input text">Clear</button>
+          </div>
+        </div>
+
+        <div class="editor-container">
+          <textarea id="json-input" class="code-editor" placeholder="Paste broken JSON, markdown-fenced output, single-quoted dicts, or unformatted text here..." spellcheck="false"></textarea>
+        </div>
+
+        <!-- Schema Section -->
+        <div class="schema-section">
+          <div class="schema-header">
+            <div class="panel-title">
+              <span class="step-num">2</span>
+              <span>Target JSON Schema</span>
+            </div>
+            <div class="schema-feedback" id="schema-status-indicator">
+              <span class="badge badge-subtle">Schema Active</span>
+            </div>
+          </div>
+          <div class="editor-container schema-editor-container">
+            <textarea id="schema-input" class="code-editor" placeholder="Paste target JSON Schema (optional)..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Action Submit Button -->
+        <div class="action-footer">
+          <button type="button" class="btn btn-primary" id="repair-submit-btn">
+            <span class="btn-spinner" id="btn-spinner"></span>
+            <span class="btn-icon">⚡</span>
+            <span id="btn-text">Repair JSON</span>
+            <span class="kbd-hint">Ctrl + Enter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Panel: Output & Telemetry -->
+      <div class="panel panel-output">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="step-num">3</span>
+            <span>Repaired Output</span>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-ghost" id="copy-result-btn" title="Copy clean JSON to clipboard">
+              <span id="copy-btn-text">Copy JSON</span>
+            </button>
+            <button type="button" class="btn btn-ghost" id="download-result-btn" title="Download output file">
+              <span>Download</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetry Summary Bar -->
+        <div class="telemetry-bar" id="telemetry-bar">
+          <div class="telemetry-item" id="status-pill-container">
+            <span class="status-pill status-ready" id="status-pill">READY</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Tier:</span>
+            <span class="telemetry-val" id="tier-pill">-</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">AI Calls:</span>
+            <span class="telemetry-val" id="ai-calls-pill">0</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Latency:</span>
+            <span class="telemetry-val" id="latency-pill">-</span>
+          </div>
+        </div>
+
+        <!-- Warning / Error Alerts -->
+        <div class="alert alert-warning" id="unrecoverable-alert" style="display: none;">
+          <strong>Zero-Hallucination Policy Alert:</strong>
+          <div id="unrecoverable-message">Required fields could not be found in the source text and were set to <code>null</code>.</div>
+        </div>
+
+        <div class="alert alert-error" id="validation-errors-alert" style="display: none;">
+          <strong>Validation Errors:</strong>
+          <ul id="validation-errors-list"></ul>
+        </div>
+
+        <!-- Output JSON Viewer -->
+        <div class="editor-container output-container">
+          <pre id="json-output" class="code-output"><code>// Repaired, schema-conforming JSON will appear here...</code></pre>
+        </div>
+
+        <!-- Diagnostic Collapsible Details -->
+        <details class="diagnostics-details" id="diagnostics-accordion">
+          <summary class="diagnostics-summary">
+            <span>Diagnostic Telemetry & Strategies Applied</span>
+            <span class="accordion-icon">▾</span>
+          </summary>
+          <div class="diagnostics-content">
+            <div class="diag-group">
+              <div class="diag-label">Strategies Applied:</div>
+              <div class="diag-tags" id="strategies-tags-container">
+                <span class="diag-empty">None</span>
+              </div>
+            </div>
+            <div class="diag-group">
+              <div class="diag-label">Total Repair Attempts:</div>
+              <div class="diag-val" id="diag-attempts">-</div>
+            </div>
+            <div class="diag-group">
+              <div class="diag-label">Ollama Connection:</div>
+              <div class="diag-val" id="diag-ollama-status">Checking...</div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <span>StructFix v0.1.0 • Local-first deterministic & open-weight model JSON repair.</span>
+      <span>MIT License • Local inference via Ollama.</span>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

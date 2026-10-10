@@ -23,7 +23,7 @@ def schema_dict(fixtures_dir):
 def test_engine_valid_fixture(fixtures_dir, schema_dict):
     raw = (fixtures_dir / "valid.json").read_text()
     result = repair(raw, schema_dict, enable_tier2=False)
-    assert result.status == "success"
+    assert result.status == "valid"
     assert result.tier_used == 0
     assert result.attempts == 0
     assert result.ai_calls == 0
@@ -34,7 +34,7 @@ def test_engine_valid_fixture(fixtures_dir, schema_dict):
 def test_engine_fenced_fixture(fixtures_dir, schema_dict):
     raw = (fixtures_dir / "fenced.json").read_text()
     result = repair(raw, schema_dict, enable_tier2=False)
-    assert result.status == "success"
+    assert result.status == "valid"
     assert result.tier_used == 1
     assert result.is_valid is True
     assert result.data["name"] == "Bob Smith"
@@ -44,7 +44,7 @@ def test_engine_fenced_fixture(fixtures_dir, schema_dict):
 def test_engine_trailing_comma_fixture(fixtures_dir, schema_dict):
     raw = (fixtures_dir / "trailing_comma.json").read_text()
     result = repair(raw, schema_dict, enable_tier2=False)
-    assert result.status == "success"
+    assert result.status == "valid"
     assert result.tier_used == 1
     assert result.is_valid is True
     assert result.data["name"] == "Charlie Davis"
@@ -53,7 +53,7 @@ def test_engine_trailing_comma_fixture(fixtures_dir, schema_dict):
 def test_engine_single_quotes_fixture(fixtures_dir, schema_dict):
     raw = (fixtures_dir / "single_quotes.json").read_text()
     result = repair(raw, schema_dict, enable_tier2=False)
-    assert result.status == "success"
+    assert result.status == "valid"
     assert result.tier_used == 1
     assert result.is_valid is True
     assert result.data["name"] == "Dana Lee"
@@ -62,7 +62,7 @@ def test_engine_single_quotes_fixture(fixtures_dir, schema_dict):
 def test_engine_wrong_type_fixture(fixtures_dir, schema_dict):
     raw = (fixtures_dir / "wrong_type.json").read_text()
     result = repair(raw, schema_dict, enable_tier2=False)
-    assert result.status == "success"
+    assert result.status == "valid"
     assert result.tier_used == 1
     assert result.is_valid is True
     assert result.data["name"] == "Evan Wright"
@@ -82,7 +82,7 @@ def test_engine_tier2_fallback(fixtures_dir, schema_dict):
     })
 
     result = repair(raw, schema_dict, client=mock_client, model="qwen3:1.7b")
-    assert result.status == "success"
+    assert result.status == "valid"
     assert result.tier_used == 2
     assert result.ai_calls == 1
     assert result.data["age"] == 38

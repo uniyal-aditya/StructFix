@@ -1,32 +1,5 @@
-"""Structured Logger for StructFix.
+"""Structured Logger for StructFix."""
 
-Logs structured diagnostic messages to stderr to ensure stdout remains
-reserved exclusively for clean JSON output.
-"""
+from structfix.logging_config import setup_logger
 
-from __future__ import annotations
-
-import logging
-import sys
-
-
-def setup_logger(name: str = "structfix", verbose: bool = False) -> logging.Logger:
-    """Configure and return a structured logger writing to stderr."""
-    logger = logging.getLogger(name)
-    logger.handlers.clear()
-    logger.propagate = False
-
-    level = logging.DEBUG if verbose else logging.INFO
-    logger.setLevel(level)
-
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setLevel(level)
-
-    formatter = logging.Formatter(
-        fmt="[%(asctime)s] [%(levelname)s] [structfix] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    return logger
+__all__ = ["setup_logger"]
