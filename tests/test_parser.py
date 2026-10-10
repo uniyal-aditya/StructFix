@@ -6,6 +6,7 @@ from structfix.repair.parser import (
     extract_json_from_prose,
     fix_single_quotes_and_trailing_commas,
     parse_and_repair_json,
+    repair_unclosed_strings,
     strip_markdown_fences,
     strip_thinking_tags,
 )
@@ -67,6 +68,19 @@ def test_fix_single_quotes_and_trailing_commas():
     single_and_trailing = "{'name': 'Alice', 'age': 30, 'skills': ['python', 'ml',],}"
     data, strategies = parse_and_repair_json(single_and_trailing)
     assert data == {"name": "Alice", "age": 30, "skills": ["python", "ml"]}
+
+
+def test_repair_unclosed_strings():
+    # Unclosed string followed by another key (like the user's scenario)
+    broken = '{\n  "name": "Bob Smith\n  "age": 34,\n  "role": "Backend Engineer"\n}'
+    data, strategies = parse_and_repair_json(broken)
+    assert data == {"name": "Bob Smith", "age": 34, "role": "Backend Engineer"}
+    assert "repair_unclosed_strings" in strategies
+
+    # Unclosed string before closing brace
+    broken_brace = '{\n  "name": "Bob Smith",\n  "role": "Backend Engineer\n}'
+    data, strategies = parse_and_repair_json(broken_brace)
+    assert data == {"name": "Bob Smith", "role": "Backend Engineer"}
 
 
 def test_coerce_types_safe():

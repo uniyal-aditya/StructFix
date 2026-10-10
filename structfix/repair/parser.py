@@ -134,6 +134,44 @@ def extract_json_from_prose(text: str) -> str:
     return trimmed[start_idx:].strip()
 
 
+def repair_unclosed_strings(text: str) -> str:
+    """Detect and close unclosed string literals when followed by a new key or end brace.
+
+    Handles common LLM truncation where closing quotes were omitted:
+    e.g.:
+        "name": "Bob Smith
+        "age": 34,
+    becomes:
+        "name": "Bob Smith",
+        "age": 34,
+    """
+    if not text:
+        return ""
+
+    p_double_key = re.compile(
+        r'(^[ \t]*"[^"\r\n]+"\s*:\s*"[^"\r\n]*?)[ \t]*\r?\n([ \t]*"[^"\r\n]+"\s*:)',
+        re.MULTILINE
+    )
+    p_double_brace = re.compile(
+        r'(^[ \t]*"[^"\r\n]+"\s*:\s*"[^"\r\n]*?)[ \t]*\r?\n([ \t]*\})',
+        re.MULTILINE
+    )
+    p_single_key = re.compile(
+        r"(^[ \t]*'[^'\r\n]+'\s*:\s*'[^'\r\n]*?)[ \t]*\r?\n([ \t]*'[^'\r\n]+'\s*:)",
+        re.MULTILINE
+    )
+    p_single_brace = re.compile(
+        r"(^[ \t]*'[^'\r\n]+'\s*:\s*'[^'\r\n]*?)[ \t]*\r?\n([ \t]*\})",
+        re.MULTILINE
+    )
+
+    cleaned = p_double_key.sub(r'\1",\n\2', text)
+    cleaned = p_double_brace.sub(r'\1"\n\2', cleaned)
+    cleaned = p_single_key.sub(r"\1',\n\2", cleaned)
+    cleaned = p_single_brace.sub(r"\1'\n\2", cleaned)
+    return cleaned
+
+
 def fix_single_quotes_and_trailing_commas(text: str) -> str:
     """Repair single quotes and trailing commas using heuristics and json-repair."""
     if not text:
@@ -147,6 +185,15 @@ def fix_single_quotes_and_trailing_commas(text: str) -> str:
         return cleaned
     except Exception:
         pass
+
+    # Attempt unclosed string fix first
+    unclosed_fixed = repair_unclosed_strings(cleaned)
+    if unclosed_fixed != cleaned:
+        try:
+            json.loads(unclosed_fixed)
+            return unclosed_fixed
+        except Exception:
+            cleaned = unclosed_fixed
 
     # Attempt repair using json_repair
     try:
@@ -196,6 +243,17 @@ def parse_and_repair_json(text: str) -> tuple[Any, list[str]]:
         return data, strategies
     except Exception:
         pass
+
+    # 4b. Pre-pass: repair unclosed strings before next property or end brace
+    unclosed_fixed = repair_unclosed_strings(current)
+    if unclosed_fixed != current:
+        current = unclosed_fixed
+        strategies.append("repair_unclosed_strings")
+        try:
+            data = json.loads(current)
+            return data, strategies
+        except Exception:
+            pass
 
     # 5. Fix single quotes / trailing commas via json-repair
     try:
