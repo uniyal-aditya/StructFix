@@ -28,8 +28,12 @@ class OllamaClient:
     def check_health(self) -> dict[str, Any]:
         """Check connection to Ollama and list available models."""
         endpoint = f"{self.base_url}/api/tags"
+        headers = {
+            "ngrok-skip-browser-warning": "true",
+            "User-Agent": "StructFix/0.1.0",
+        }
         try:
-            res = requests.get(endpoint, timeout=2.0)
+            res = requests.get(endpoint, headers=headers, timeout=5.0)
             if res.status_code == 200:
                 data = res.json()
                 models = [m.get("name") for m in data.get("models", [])]
@@ -89,8 +93,12 @@ class OllamaClient:
         if schema:
             payload["format"] = schema
 
+        headers = {
+            "ngrok-skip-browser-warning": "true",
+            "User-Agent": "StructFix/0.1.0",
+        }
         try:
-            response = requests.post(endpoint, json=payload, timeout=self.timeout)
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=self.timeout)
             response.raise_for_status()
             res_data = response.json()
             raw_response = res_data.get("response", "")
