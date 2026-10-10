@@ -1,0 +1,10 @@
+{
+  "name": "Charlie Davis",
+  "age": 41,
+  "role": "DevOps Specialist",
+  "skills": [
+    "kubernetes",
+    "terraform",
+  ],
+  "active": true,
+}

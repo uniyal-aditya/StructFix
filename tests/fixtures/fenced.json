@@ -1,0 +1,17 @@
+<think>
+Structuring developer profile JSON adhering to schema...
+</think>
+Here is the developer profile you requested:
+```json
+{
+  "name": "Bob Smith",
+  "age": 34,
+  "role": "Backend Engineer",
+  "skills": [
+    "rust",
+    "postgres"
+  ],
+  "active": true
+}
+```
+Hope this is helpful!

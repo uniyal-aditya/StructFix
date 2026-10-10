@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserProfile",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Full name of the user"
+    },
+    "age": {
+      "type": ["integer", "null"],
+      "description": "Age of the user in years, or null if unknown"
+    },
+    "role": {
+      "type": "string",
+      "description": "Job title or role"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of core competencies"
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether the user profile is active"
+    }
+  },
+  "required": ["name", "age"]
+}

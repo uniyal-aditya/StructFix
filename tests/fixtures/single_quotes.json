@@ -1,0 +1,10 @@
+{
+  'name': 'Dana Lee',
+  'age': 27,
+  'role': 'Data Scientist',
+  'skills': [
+    'pytorch',
+    'pandas'
+  ],
+  'active': true
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Evan Wright",
+  "age": "32",
+  "role": "Frontend Engineer",
+  "skills": [
+    "typescript",
+    "react"
+  ],
+  "active": "true"
+}
