@@ -14,11 +14,18 @@ from structfix.repair.validator import validate_schema
 
 logger = setup_logger("structfix.web")
 
-# Resolve templates and static directories relative to package
+# Resolve templates, static and fixtures directories relative to package and runtime
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
-FIXTURES_DIR = BASE_DIR.parent / "tests" / "fixtures"
+
+# Robust directory lookup for fixtures in both local and serverless environments
+CANDIDATE_FIXTURE_DIRS = [
+    BASE_DIR.parent / "tests" / "fixtures",
+    Path.cwd() / "tests" / "fixtures",
+    BASE_DIR / "fixtures",
+]
+FIXTURES_DIR = next((d for d in CANDIDATE_FIXTURE_DIRS if d.exists()), CANDIDATE_FIXTURE_DIRS[0])
 
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
@@ -48,7 +55,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.route("/api/health", methods=["GET"])
     def health():
         """Check server health and Ollama model connectivity."""
-        client = OllamaClient()
+        custom_host = request.args.get("ollama_url")
+        client = OllamaClient(base_url=custom_host)
         ollama_status = client.check_health()
         ollama_status["configured_model"] = "qwen3:1.7b"
 
@@ -64,7 +72,19 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         """Return available demonstration fixtures and schemas."""
         fixtures = []
         schema_path = FIXTURES_DIR / "schema.json"
-        default_schema = {}
+        default_schema = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "UserProfile",
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Full name of the user"},
+                "age": {"type": ["integer", "null"], "description": "Age of the user in years"},
+                "role": {"type": "string", "description": "Job title or role"},
+                "skills": {"type": "array", "items": {"type": "string"}, "description": "List of core competencies"},
+                "active": {"type": "boolean", "description": "Whether the user profile is active"}
+            },
+            "required": ["name", "age"]
+        }
         if schema_path.exists():
             try:
                 default_schema = json.loads(schema_path.read_text(encoding="utf-8"))
@@ -200,11 +220,15 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             f"max_retries={max_retries}, input_length={len(raw_input)}"
         )
 
+        ollama_url = body.get("ollama_url")
+        custom_client = OllamaClient(base_url=ollama_url) if ollama_url else None
+
         result = repair(
             raw_input=raw_input,
             schema=schema_dict,
             model=model,
             max_retries=max_retries,
+            client=custom_client,
             enable_tier2=enable_ai,
         )
 

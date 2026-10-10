@@ -1,0 +1,4 @@
+Flask>=3.0.0
+jsonschema>=4.20.0
+json-repair>=0.30.0
+requests>=2.31.0
