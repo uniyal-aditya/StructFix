@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "structfix"
+version = "0.1.0"
+description = "Lightweight, local-first Python CLI harness to repair malformed LLM JSON output."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "StructFix Contributors"}
+]
+dependencies = [
+    "jsonschema>=4.20.0",
+    "json-repair>=0.30.0",
+    "requests>=2.31.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0"
+]
+
+[project.scripts]
+structfix = "structfix.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["structfix*"]
