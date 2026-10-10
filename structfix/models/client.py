@@ -15,7 +15,7 @@ class OllamaClient:
     def __init__(
         self,
         base_url: str | None = None,
-        timeout: float = 45.0,
+        timeout: float = 15.0,
     ) -> None:
         self.base_url = (
             base_url

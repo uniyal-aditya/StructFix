@@ -52,15 +52,18 @@ document.addEventListener("DOMContentLoaded", () => {
         ollamaDot.className = "dot dot-online";
         ollamaStatusText.textContent = `Ollama Online (${ollama.configured_model || "qwen3:1.7b"})`;
         diagOllamaStatus.textContent = `Connected at ${ollama.base_url} (Found ${ollama.models ? ollama.models.length : 0} models)`;
+        enableAiToggle.checked = true;
       } else {
         ollamaDot.className = "dot dot-offline";
-        ollamaStatusText.textContent = "Ollama Offline (Tier 1 Only)";
-        diagOllamaStatus.textContent = `Unavailable (${ollama.error || "Connection refused"}). Tier 1 deterministic repair active.`;
+        ollamaStatusText.textContent = "Ollama Offline (Tier 1 Active)";
+        diagOllamaStatus.textContent = "Ollama server not detected at localhost:11434. Instant Tier 1 deterministic repairs are fully operational.";
+        enableAiToggle.checked = false;
       }
     } catch (err) {
       ollamaDot.className = "dot dot-offline";
-      ollamaStatusText.textContent = "Offline (Tier 1 Only)";
-      diagOllamaStatus.textContent = `Health check failed: ${err.message}`;
+      ollamaStatusText.textContent = "Offline (Tier 1 Active)";
+      diagOllamaStatus.textContent = `Health check info: ${err.message}`;
+      enableAiToggle.checked = false;
     }
   }
 

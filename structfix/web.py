@@ -40,6 +40,11 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         """Render main interactive user interface."""
         return render_template("index.html")
 
+    @app.route("/favicon.ico", methods=["GET"])
+    def favicon():
+        """Handle favicon requests with empty 204 No Content."""
+        return ("", 204)
+
     @app.route("/api/health", methods=["GET"])
     def health():
         """Check server health and Ollama model connectivity."""
