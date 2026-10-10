@@ -18,10 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const enableAiToggle = document.getElementById("enable-ai-toggle");
   const modelSelect = document.getElementById("model-select");
   const retriesSelect = document.getElementById("retries-select");
+  const endpointInput = document.getElementById("endpoint-input");
 
   const ollamaDot = document.getElementById("ollama-dot");
   const ollamaStatusText = document.getElementById("ollama-status-text");
   const diagOllamaStatus = document.getElementById("diag-ollama-status");
+
+  // Load saved custom endpoint from localStorage
+  if (endpointInput) {
+    const savedEndpoint = localStorage.getItem("ollama_endpoint") || "";
+    endpointInput.value = savedEndpoint;
+    endpointInput.addEventListener("change", () => {
+      const val = endpointInput.value.trim();
+      localStorage.setItem("ollama_endpoint", val);
+      checkHealth();
+    });
+  }
 
   // Telemetry & Alerts
   const statusPill = document.getElementById("status-pill");
@@ -43,7 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1. Initial Health Check
   async function checkHealth() {
     try {
-      const res = await fetch("/api/health");
+      const customUrl = endpointInput ? endpointInput.value.trim() : "";
+      const healthUrl = customUrl ? `/api/health?ollama_url=${encodeURIComponent(customUrl)}` : "/api/health";
+      const res = await fetch(healthUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       
@@ -56,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         ollamaDot.className = "dot dot-offline";
         ollamaStatusText.textContent = "Ollama Offline (Tier 1 Active)";
-        diagOllamaStatus.textContent = "Ollama server not detected at localhost:11434. Instant Tier 1 deterministic repairs are fully operational.";
+        diagOllamaStatus.textContent = `Ollama not detected at ${ollama.base_url || "localhost"}. Instant Tier 1 deterministic repairs are fully operational.`;
         enableAiToggle.checked = false;
       }
     } catch (err) {
@@ -144,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       model: modelSelect.value,
       enable_ai: enableAiToggle.checked,
       max_retries: parseInt(retriesSelect.value, 10),
+      ollama_url: (endpointInput && endpointInput.value.trim()) ? endpointInput.value.trim() : null,
     };
 
     try {

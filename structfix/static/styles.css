@@ -329,6 +329,23 @@ body {
   border-color: var(--border-focus);
 }
 
+.form-input {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-family: var(--font-mono);
+  width: 175px;
+  transition: border-color 0.15s ease;
+}
+
+.form-input:focus {
+  border-color: var(--border-focus);
+}
+
 .controls-info {
   display: flex;
   align-items: center;
